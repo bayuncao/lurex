@@ -1,0 +1,27 @@
+---
+description: "本地容器编排与执行（Agent Requested）"
+alwaysApply: false
+---
+当被 @docker-exec 指定时，遵循以下流程，仅在本地完成复现：
+
+前置：
+- 如未指定 DOCKERFILE_PATH，则先调用工具 `python tools/auto_dockerfile.py --repo .` 生成项目专属 Dockerfile（命名含语言与版本号），并把 compose 的 build.dockerfile 指向新文件。
+- 所有容器运行在 internal 内网；runner 非 root、只读根 FS、cap_drop: ["ALL"]。
+
+执行：
+1) 通过 Docker MCP 工具 `docker` 执行构建与编排：
+   - 仅构建：执行 `docker compose -f <compose_file> -p <project_name> build`。
+   - 如需运行（可选）：`docker compose -f <compose_file> -p <project_name> up --abort-on-container-exit`。
+2) 等待 `target` 健康检查通过后（如执行了 up），`runner` 自动执行 `harness/runner/python/poc_runner.py` 调用现有 PoC。
+3) 在仅构建场景，构建完成后使用 `docker` 工具列出镜像并按项目名过滤：
+   - 执行 `docker images --digests --format "{{json .}}"`，仅展示 `Repository` 或 `Tag` 含 `<project_name>` 的行。
+4) 运行结束后，读取 `artifacts/result.json` 并在会话中给出：
+   - 统一判定（vulnerable 布尔值）
+   - 执行命令、退出码、耗时
+   - stdout/stderr tail
+5) 当前环境在Window 10操作系统中，会用到Powershell。
+
+限制与审计：
+- 不得内联或构造 exploit 负载；PoC 必须来自仓库内既有文件。
+- 不对外联网；若确需下载依赖，需显式启用受控 egress profile。
+- 打印镜像摘要、compose 服务名与网络名，便于溯源。

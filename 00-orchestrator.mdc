@@ -1,0 +1,13 @@
+---
+description: "安全复现总控（Always）"
+alwaysApply: true
+---
+- 只生成/修改基础设施文件（Dockerfile / docker-compose.yml / CI / harness / runner）。
+- 禁止生成或改写 exploit 细节；默认内网隔离（compose.networks.*.internal=true）、非 root、`cap_drop: ["ALL"]`、只读根FS。
+- 统一产物：artifacts/result.json（含命令、退出码、耗时、stdout/stderr tail、判定）。
+- 安全态配置检查例外：允许执行仓库内既有 PoC（不修改脚本、不新增 exploit 负载），且必须：
+  - 仅用于配置检查与判定；不对外联网；
+  - 不输出明文凭据（如需展示，输出长度与短哈希）；
+  - 容器需非 root、只读根FS、cap_drop: ["ALL"]、no-new-privileges；
+  - stdout 末行必须为 VULNERABLE 或 SAFE。
+- 执行入口：允许通过包装器脚本（位于 `harness/poc/`）作为入口替代原 PoC；命令可为 `python /poc/wrapper_<name>.py --mode check`，以包装器输出作为最终判定口径。

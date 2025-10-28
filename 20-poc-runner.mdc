@@ -1,0 +1,13 @@
+---
+description: "PoC 编排与判定（Agent Requested）"
+alwaysApply: false
+---
+<!-- 当被 @poc-runner 指定时：
+- 仅通过 `harness/runner/python/poc_runner.py` 执行 PoC；不内联/构造 exploit 负载。
+- 统一判定：`exit_code == 0` 或 stdout 匹配 `VULNERABLE` 视为复现成功（`vulnerable=true`）。
+- 产出：`artifacts/result.json`、日志与可追溯证据（命令、参数、版本、镜像摘要）。 -->
+当被 @poc-runner 指定时：
+- 仅通过 `harness/runner/python/poc_runner.py` 执行；不内联/构造 exploit 负载。
+- 允许“包装器模式（wrapper）”作为执行入口：包装器脚本位于 `harness/poc/`，可替代原 PoC 直接执行。
+- 判定口径：以包装器 stdout 为准；`exit_code == 0` 或 stdout 匹配 `VULNERABLE` 视为复现成功（`vulnerable=true`）。
+- 产出：`artifacts/result.json`、日志与可追溯证据（命令、参数、版本、镜像摘要）。
